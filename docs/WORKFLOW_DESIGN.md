@@ -12,6 +12,8 @@ Roughly 80% of musicians have an abandoned gig calendar on their website. Not be
 
 Any fix that still requires a login, a manual form, or a middleman doesn't actually solve this — it just relocates the friction.
 
+**Validated end-to-end, 2026-08-31:** a real email sent to `guacamayo@gigs.haxbyte.com` flowed through the entire pipeline — Cloudflare Email Routing, Claude extraction, KV storage — with zero manual steps, first time. The test email deliberately included an invalid date; the model declined to guess and explained why instead, which is the specific failure mode named above (a wrong date silently landing on a real calendar) — a good sign this early, not just a pass/fail. See the "Real bug found" and "Cost to run" sections below for the specifics.
+
 ## The workflow: email forwarding as the only interface
 
 **The client's entire interaction with the product is: forward the gig-confirmation email they already got.** No login, no app, no dashboard, no bookmark to remember.
@@ -61,7 +63,7 @@ At current/early scale (a handful of clients, each forwarding maybe tens of gigs
 | Cloudflare Workers | Free tier (100k+ req/day) |
 | Cloudflare KV | Free tier |
 | Cloudflare Email Routing | Free |
-| Claude API (Haiku 4.5) | ~$0.002 per gig parsed |
+| Claude API (Haiku 4.5) | ~$0.0015-0.002 per gig parsed — **confirmed real, 2026-08-31**: the Anthropic Console showed 3,949 input / 532 output tokens across the night's ~4 real extraction calls, ~$0.0066 combined, not just estimated |
 | Outbound receipt email | Free tier of any transactional provider |
 
 Realistic total: **under $2/month**, scaling with actual parse volume rather than a fixed server cost.

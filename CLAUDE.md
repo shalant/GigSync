@@ -96,10 +96,17 @@ subdomain under `haxbyte.com`'s Cloudflare Email Routing (MX/TXT records added t
 domain had zero prior email setup, so nothing existing was affected; its default catch-all
 stays disabled). One routing rule: `guacamayo@gigs.haxbyte.com` → Worker `gigsync-backend`,
 status Active. See `haxbyte`'s own `CLAUDE.md` for the cross-repo note left there, since this
-lives in Cloudflare's dashboard config, not in either repo's code. **Still not verified
-end-to-end** — no real email has been sent through it yet (DNS was still "Syncing"
-immediately after setup), so the `email()` handler itself remains unproven until a real
-message actually arrives and gets parsed correctly.
+lives in Cloudflare's dashboard config, not in either repo's code.
+
+**Verified end-to-end with a real email (2026-08-31):** a real message sent to
+`guacamayo@gigs.haxbyte.com` was received, parsed by `postal-mime`, extracted by Claude, and
+stored — the full pipeline, no manual steps, first time. The test message deliberately
+included an invalid date ("32-September, 2026"); the model correctly left `date` empty and
+explained why in `notes` instead of guessing a plausible-looking replacement — the specific
+failure mode (a wrong date silently landing on a real calendar) this product exists to
+prevent. Real cost confirmed via the Anthropic Console: the whole night's testing
+(~4 extraction calls) totaled 3,949 input / 532 output tokens on Haiku 4.5, ~$0.0066
+combined — matches the ~$0.002/gig estimate already in `docs/WORKFLOW_DESIGN.md`.
 
 **Not yet built:** the confirmation-receipt auto-reply, and an edit/delete workflow (both
 `/extract` and the admin dashboard are currently read/append-only).
