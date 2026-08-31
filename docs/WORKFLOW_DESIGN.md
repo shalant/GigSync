@@ -31,6 +31,8 @@ Two choices specifically avoid ever needing login/DNS/hosting credentials from t
 
 "You never need to give me your hosting login" is a real trust/differentiation point for the pitch, not just an implementation detail.
 
+**Decided (2026-08-30):** for testing, that "own domain" is `haxbyte.com` (already ours, already on Cloudflare — no new domain purchase needed), used as `gigs.haxbyte.com`. Important distinction that came up while deciding this: using it purely as a **mail-routing target** is low-exposure (nobody browses to it, it's not linked anywhere), but hosting the actual **admin dashboard** there would not be — `haxbyte.com` is deliberately kept as a neutral, cold-audience, recruiter-facing brand (see `HAXBYTE_BRAND_PLAN.md`), and a live, zero-auth internal tool doesn't belong on a domain a recruiter might actually visit. So: email subdomain there, dashboard stays on the Worker's own `*.workers.dev` URL (or wherever it's actually deployed).
+
 ## Confirmation receipt (not yet built)
 
 After a successful parse, auto-reply to the forwarded email: *"Got it — added [Venue] on [Date] to your calendar."* Cheap to add (any transactional email API's free tier covers this volume) and does double duty:
@@ -43,6 +45,10 @@ After a successful parse, auto-reply to the forwarded email: *"Got it — added 
 Claude's Messages API can take a PDF directly as a native `document` content block (no beta header, handles scanned/image-only PDFs via the same call, up to 32MB/600 pages) — so if a raw PDF/photo ever needs to go straight to Claude, that path exists and needs no separate OCR library or dependency (notably useful since Cloudflare Workers can't reliably run typical Node PDF-parsing libraries).
 
 But the default assumption is plain text: if whatever capture step is in front of the Worker (a scanning app, a forwarded email body) can already produce text, send that — it's cheaper (a PDF page runs meaningfully more tokens than the same content as text, since it's processed like an image) and needs zero code beyond what already exists (`POST /extract { text }`). Only reach for the PDF/document path if a real case turns up where plain-text OCR quality isn't good enough.
+
+## Real bug found via live testing: dates need a "today" anchor
+
+The "actual problem" section above names a wrong date on a real calendar as exactly the failure this exists to prevent — and live testing on 2026-08-30 turned up a real way that could happen: a confirmation with a year-less date ("Sat Oct 3") got resolved to 2025-10-03 (already in the past) instead of 2026-10-03, because the extraction prompt never told the model what today's actual date was. Fixed by anchoring the prompt to the real current date and instructing it to resolve partial dates to the next occurrence on or after today, never the past. Worth remembering as a class of bug, not just this one instance: anything that depends on "now" needs "now" passed in explicitly — the model has no other way to know.
 
 ## Cost to run
 
@@ -57,6 +63,10 @@ At current/early scale (a handful of clients, each forwarding maybe tens of gigs
 | Outbound receipt email | Free tier of any transactional provider |
 
 Realistic total: **under $2/month**, scaling with actual parse volume rather than a fixed server cost.
+
+## Security posture while testing (2026-08-30)
+
+Deliberately **not** building real authentication yet — matches the standing "don't build client-facing tooling before there's a real, paying client" guardrail, and the admin dashboard's zero-auth, "the URL is the credential" design is fine for a private test. The one precaution that *does* apply even now, because it's free: don't publish or link the real deployed URL or the real inbound email address anywhere public. Right now obscurity is the only gate — worth not undermining it by broadcasting the link before there's an actual auth story.
 
 ## Go-to-market: white-glove now, self-serve later (deliberately deferred)
 

@@ -6,6 +6,10 @@
 	// then paste the returned id below (and add a second entry for
 	// preview_id if you want `wrangler dev --remote` to use a separate namespace).
 	"kv_namespaces": [
-		{ "binding": "GIGS_KV", "id": "REPLACE_WITH_KV_NAMESPACE_ID" }
+		{
+			"binding": "GIGS_KV",
+			"id": "caf68d4ac2e348aeade37bce880eeab8",
+			"remote": true
+		}
 	]
 }

@@ -1,0 +1,58 @@
+/*
+ * Default styling for the GigSync embed widget. Deliberately minimal and
+ * override-friendly — every value is a custom property so a host site can
+ * reskin it by redefining these on `.gigsync-widget` (or an ancestor)
+ * without touching this file.
+ */
+.gigsync-widget {
+	--gigsync-accent: #2dd4bf;
+	--gigsync-text: #0b1220;
+	--gigsync-muted: #6b7280;
+	--gigsync-border: #e5e7eb;
+	--gigsync-font: inherit;
+
+	font-family: var(--gigsync-font);
+	color: var(--gigsync-text);
+}
+
+.gigsync-list {
+	list-style: none;
+	margin: 0;
+	padding: 0;
+	display: flex;
+	flex-direction: column;
+	gap: 0.75rem;
+}
+
+.gigsync-item {
+	display: grid;
+	grid-template-columns: auto 1fr;
+	gap: 1rem;
+	align-items: baseline;
+	padding: 0.75rem 0;
+	border-bottom: 1px solid var(--gigsync-border);
+}
+
+.gigsync-item:last-child {
+	border-bottom: none;
+}
+
+.gigsync-date {
+	font-weight: 600;
+	color: var(--gigsync-accent);
+	white-space: nowrap;
+}
+
+.gigsync-venue {
+	font-weight: 600;
+}
+
+.gigsync-meta {
+	color: var(--gigsync-muted);
+	font-size: 0.9em;
+}
+
+.gigsync-empty {
+	color: var(--gigsync-muted);
+	font-style: italic;
+}
