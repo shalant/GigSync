@@ -33,6 +33,8 @@ Two choices specifically avoid ever needing login/DNS/hosting credentials from t
 
 **Decided (2026-08-30):** for testing, that "own domain" is `haxbyte.com` (already ours, already on Cloudflare — no new domain purchase needed), used as `gigs.haxbyte.com`. Important distinction that came up while deciding this: using it purely as a **mail-routing target** is low-exposure (nobody browses to it, it's not linked anywhere), but hosting the actual **admin dashboard** there would not be — `haxbyte.com` is deliberately kept as a neutral, cold-audience, recruiter-facing brand (see `HAXBYTE_BRAND_PLAN.md`), and a live, zero-auth internal tool doesn't belong on a domain a recruiter might actually visit. So: email subdomain there, dashboard stays on the Worker's own `*.workers.dev` URL (or wherever it's actually deployed).
 
+**Live as of 2026-08-30:** the `gigs.haxbyte.com` subdomain, MX/TXT records, and a routing rule (`guacamayo@gigs.haxbyte.com` → the deployed Worker) are actually configured and Active in Cloudflare — not just decided. Not yet proven end-to-end, though: no real email has been sent through it, so the `email()` handler is deployed but unverified against real inbound mail.
+
 ## Confirmation receipt (not yet built)
 
 After a successful parse, auto-reply to the forwarded email: *"Got it — added [Venue] on [Date] to your calendar."* Cheap to add (any transactional email API's free tier covers this volume) and does double duty:

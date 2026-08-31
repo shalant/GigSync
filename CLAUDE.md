@@ -89,14 +89,20 @@ address (`guacamayo@gigs.haxbyte.com` → `guacamayo`); the parsed body text goe
 same `storeGig()` helper `/extract` uses — refactored out specifically so both entry points
 share one code path. Never throws (logs and drops instead) so a parse failure can't cause
 Cloudflare to bounce or retry the message. Type-checked and the shared `storeGig` refactor
-was regression-tested against the real Anthropic API locally; **the handler itself can't be
-tested until Email Routing is actually configured** — there's no local emulation for
-inbound SMTP (see docs/WORKFLOW_DESIGN.md).
+was regression-tested against the real Anthropic API locally.
 
-**Not yet built:** the Cloudflare Email Routing rule itself (dashboard-only, not
-CLI/code-scriptable — routes `gigs.haxbyte.com` addresses to this deployed Worker), the
-confirmation-receipt auto-reply, and an edit/delete workflow (both `/extract` and the admin
-dashboard are currently read/append-only).
+**Email Routing configured and active (2026-08-30):** `gigs.haxbyte.com` added as a scoped
+subdomain under `haxbyte.com`'s Cloudflare Email Routing (MX/TXT records added there — that
+domain had zero prior email setup, so nothing existing was affected; its default catch-all
+stays disabled). One routing rule: `guacamayo@gigs.haxbyte.com` → Worker `gigsync-backend`,
+status Active. See `haxbyte`'s own `CLAUDE.md` for the cross-repo note left there, since this
+lives in Cloudflare's dashboard config, not in either repo's code. **Still not verified
+end-to-end** — no real email has been sent through it yet (DNS was still "Syncing"
+immediately after setup), so the `email()` handler itself remains unproven until a real
+message actually arrives and gets parsed correctly.
+
+**Not yet built:** the confirmation-receipt auto-reply, and an edit/delete workflow (both
+`/extract` and the admin dashboard are currently read/append-only).
 
 **Also being explored, separately:** a from-scratch C# reimplementation of this same idea
 (console app first, to validate the extraction logic in isolation — matching this repo's own
