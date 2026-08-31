@@ -1,6 +1,6 @@
 # GigSync — Musician Gig-Calendar Automation
 
-**Status:** MVP backend built and deployed live (2026-08-30) — core extraction/storage validated against real infrastructure. Still pre-validation on the actual product idea itself (no real client email tested yet) and pre-decision on business model. See "Built: MVP Backend" below for what's actually live.
+**Status:** MVP backend built, deployed live, and validated end-to-end with a real email (2026-08-31) — a real message sent to a real address flowed all the way through Cloudflare Email Routing, Claude extraction, and KV storage with zero manual steps. Still pre-decision on business model, and still no real *client* (Guacamayo's actual gig confirmations, not a self-sent test) run through it yet. See "Built: MVP Backend" and "Validation Plan" below.
 
 ## The Problem
 
@@ -57,7 +57,10 @@ Two different paths, and they lead to different builds:
 ## Validation Plan (cheapest thing first)
 
 1. **Zero-infra test:** grab 2-3 real gig-confirmation emails (starting with ones from Guacamayo's leader) and run them through the Claude API with a JSON-extraction prompt. Check how reliably it handles messy, real-world formatting. This is the riskiest and most novel part of the idea — prove it out before spending anything on infrastructure.
-2. Only after parsing holds up **and** there's a real interested client: build the minimal path (shared DB schema, inbound-email trigger, embeddable widget).
+
+   **Done, 2026-08-31 — passed, for real, not just in theory.** A real email sent to `guacamayo@gigs.haxbyte.com` was received by Cloudflare Email Routing, parsed, extracted by Claude, and stored — the entire pipeline, zero manual steps, first time. The test email deliberately included an invalid date ("32-September, 2026"); rather than guessing a plausible-sounding replacement, the model correctly left the date field empty and explained why in the notes field. That's the specific failure mode this whole idea exists to prevent (a wrong date silently landing on a real calendar) — this is a good early sign, not just a pass/fail. **Real cost, confirmed via the Anthropic Console (not estimated):** the entire night's testing (~4 real extraction calls) totaled 3,949 input / 532 output tokens on Haiku 4.5 — about **$0.0066 combined**, i.e. roughly a sixth of a cent per email. Matches the cost table in `docs/WORKFLOW_DESIGN.md`.
+
+2. Only after parsing holds up **and** there's a real interested client: build the minimal path (shared DB schema, inbound-email trigger, embeddable widget). **Now built and live** — see "Built: MVP Backend" above. Still outstanding: a real interested client (this remains a genuine open question, not yet resolved by the technical validation above).
 3. Defer indefinitely: full multi-tenant admin UI, PDF-to-promo-material/social-auto-post feature.
 
 Consistent with the standing "don't build client-facing tooling before there's a real paying client" guardrail already applied elsewhere in the broader plan.
