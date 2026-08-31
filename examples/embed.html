@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8" />
+	<title>GigSync widget — embed demo</title>
+	<link rel="stylesheet" href="../public/widget.css" />
+	<style>
+		body {
+			max-width: 480px;
+			margin: 3rem auto;
+			font-family: system-ui, sans-serif;
+			background: #fafafa;
+			padding: 0 1.5rem;
+		}
+		h1 {
+			font-size: 1.25rem;
+		}
+	</style>
+</head>
+<body>
+	<h1>Guacamayo — Upcoming Shows</h1>
+
+	<!--
+	  This is the entire integration surface: one mount element, one script
+	  tag. Everything else (fetch, render, error handling) is inside widget.js.
+	  Copy these two lines into any site — Astro, plain HTML, Squarespace's
+	  code-injection block, whatever.
+	-->
+	<div id="gigsync-calendar"></div>
+	<script
+		src="../public/widget.js"
+		data-api="http://localhost:8787"
+		data-client="guacamayo"
+		data-mount="gigsync-calendar"
+	></script>
+</body>
+</html>

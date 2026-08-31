@@ -31,6 +31,8 @@ Two choices specifically avoid ever needing login/DNS/hosting credentials from t
 
 "You never need to give me your hosting login" is a real trust/differentiation point for the pitch, not just an implementation detail.
 
+**Decided (2026-08-30):** for testing, that "own domain" is `haxbyte.com` (already ours, already on Cloudflare — no new domain purchase needed), used as `gigs.haxbyte.com`. Important distinction that came up while deciding this: using it purely as a **mail-routing target** is low-exposure (nobody browses to it, it's not linked anywhere), but hosting the actual **admin dashboard** there would not be — `haxbyte.com` is deliberately kept as a neutral, cold-audience, recruiter-facing brand (see `HAXBYTE_BRAND_PLAN.md`), and a live, zero-auth internal tool doesn't belong on a domain a recruiter might actually visit. So: email subdomain there, dashboard stays on the Worker's own `*.workers.dev` URL (or wherever it's actually deployed).
+
 ## Confirmation receipt (not yet built)
 
 After a successful parse, auto-reply to the forwarded email: *"Got it — added [Venue] on [Date] to your calendar."* Cheap to add (any transactional email API's free tier covers this volume) and does double duty:
@@ -57,6 +59,10 @@ At current/early scale (a handful of clients, each forwarding maybe tens of gigs
 | Outbound receipt email | Free tier of any transactional provider |
 
 Realistic total: **under $2/month**, scaling with actual parse volume rather than a fixed server cost.
+
+## Security posture while testing (2026-08-30)
+
+Deliberately **not** building real authentication yet — matches the standing "don't build client-facing tooling before there's a real, paying client" guardrail, and the admin dashboard's zero-auth, "the URL is the credential" design is fine for a private test. The one precaution that *does* apply even now, because it's free: don't publish or link the real deployed URL or the real inbound email address anywhere public. Right now obscurity is the only gate — worth not undermining it by broadcasting the link before there's an actual auth story.
 
 ## Go-to-market: white-glove now, self-serve later (deliberately deferred)
 
