@@ -1,3 +1,5 @@
+import PostalMime from "postal-mime";
+
 export interface Env {
 	ANTHROPIC_API_KEY: string;
 	GIGS_KV: KVNamespace;
@@ -106,6 +108,26 @@ async function extractGigDetails(text: string, apiKey: string): Promise<Extracte
 	const toolUse = data.content.find((block) => block.type === "tool_use");
 	if (!toolUse?.input) throw new Error("Model did not return structured output");
 	return toolUse.input;
+}
+
+// Shared by POST /extract and the email() handler below - "parse this text
+// for one client and append the result to their KV list" is the same
+// operation regardless of how the text arrived.
+async function storeGig(text: string, clientId: string, env: Env) {
+	const extracted = await extractGigDetails(text, env.ANTHROPIC_API_KEY);
+	const gig = {
+		id: crypto.randomUUID(),
+		clientId,
+		...extracted,
+		createdAt: new Date().toISOString(),
+	};
+
+	const key = `gigs:${clientId}`;
+	const existing = (await env.GIGS_KV.get(key, "json")) as unknown[] | null;
+	const gigs = existing ? [...existing, gig] : [gig];
+	await env.GIGS_KV.put(key, JSON.stringify(gigs));
+
+	return gig;
 }
 
 const LANDING_PAGE = `<!doctype html>
@@ -286,19 +308,7 @@ export default {
 			const clientId = body.clientId || "demo";
 
 			try {
-				const extracted = await extractGigDetails(body.text, env.ANTHROPIC_API_KEY);
-				const gig = {
-					id: crypto.randomUUID(),
-					clientId,
-					...extracted,
-					createdAt: new Date().toISOString(),
-				};
-
-				const key = `gigs:${clientId}`;
-				const existing = (await env.GIGS_KV.get(key, "json")) as unknown[] | null;
-				const gigs = existing ? [...existing, gig] : [gig];
-				await env.GIGS_KV.put(key, JSON.stringify(gigs));
-
+				const gig = await storeGig(body.text, clientId, env);
 				return json({ gig });
 			} catch (err) {
 				return json({ error: (err as Error).message }, 502);
@@ -324,5 +334,34 @@ export default {
 		}
 
 		return json({ error: "Not found" }, 404);
+	},
+
+	// Fires when Cloudflare Email Routing forwards a message here. This is
+	// the real version of what curl-ing POST /extract has been standing in
+	// for — the "forward the confirmation email" step from
+	// docs/WORKFLOW_DESIGN.md. Not wired to a real address yet; that's a
+	// Cloudflare dashboard step (Email Routing rule), separate from this code.
+	async email(message: ForwardableEmailMessage, env: Env): Promise<void> {
+		// clientId is just the local part of the address it was sent to,
+		// e.g. guacamayo@gigs.haxbyte.com -> "guacamayo".
+		const clientId = message.to.split("@")[0];
+
+		try {
+			const email = await PostalMime.parse(message.raw);
+			const text = email.text || email.html || "";
+
+			if (!text) {
+				console.error(`email intake: no readable body for ${clientId}`);
+				return;
+			}
+
+			const gig = await storeGig(text, clientId, env);
+			console.log(`email intake: stored gig for ${clientId}`, gig.id);
+		} catch (err) {
+			// Never throw here - an unhandled error can cause Cloudflare to
+			// retry or bounce the message. Log it (visible via `wrangler tail`)
+			// and drop it instead.
+			console.error(`email intake failed for ${clientId}:`, (err as Error).message);
+		}
 	},
 };

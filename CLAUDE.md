@@ -82,12 +82,21 @@ the real site. Change is on that repo's `feature/gigsync-integration` branch, no
 
 **Fixed 2026-08-30 (found via live testing):** the extraction prompt now includes today's date so partial/relative dates ("Sat Oct 3," "next Friday") resolve to the correct upcoming occurrence instead of an arbitrary year — a real confirmation email with a year-less date sent the model to the wrong year (2025 instead of 2026) before this fix. Verified live: the exact same input resolved incorrectly before the fix and correctly after, redeployed to `gigsync-backend.doug-rosenberg.workers.dev`.
 
-**Not yet built:** email-routing intake (Cloudflare Email Routing → this Worker — domain
-chosen, dashboard UI not yet configured), the confirmation-receipt auto-reply, an edit/delete
-workflow (both `/extract` and the admin dashboard are currently read/append-only), and a
-`email()` handler on the Worker itself (only `fetch()` exists so far). **Deployment is in
-progress as of 2026-08-30** — see README.md's "Built: MVP Backend" section for the exact
-`wrangler login`/`kv namespace create`/`secret put`/`deploy` sequence; not yet confirmed live.
+**`email()` handler (2026-08-30, on `feature/email-intake`):** the Worker now exports an
+`email()` handler alongside `fetch()`, using `postal-mime` to parse the raw MIME message
+Cloudflare Email Routing hands it. `clientId` is derived from the local part of the `to`
+address (`guacamayo@gigs.haxbyte.com` → `guacamayo`); the parsed body text goes through the
+same `storeGig()` helper `/extract` uses — refactored out specifically so both entry points
+share one code path. Never throws (logs and drops instead) so a parse failure can't cause
+Cloudflare to bounce or retry the message. Type-checked and the shared `storeGig` refactor
+was regression-tested against the real Anthropic API locally; **the handler itself can't be
+tested until Email Routing is actually configured** — there's no local emulation for
+inbound SMTP (see docs/WORKFLOW_DESIGN.md).
+
+**Not yet built:** the Cloudflare Email Routing rule itself (dashboard-only, not
+CLI/code-scriptable — routes `gigs.haxbyte.com` addresses to this deployed Worker), the
+confirmation-receipt auto-reply, and an edit/delete workflow (both `/extract` and the admin
+dashboard are currently read/append-only).
 
 **Also being explored, separately:** a from-scratch C# reimplementation of this same idea
 (console app first, to validate the extraction logic in isolation — matching this repo's own
