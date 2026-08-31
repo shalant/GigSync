@@ -5,8 +5,10 @@ calendar has gone stale. Core mechanic: a musician forwards a gig-confirmation e
 dedicated address; Claude extracts structured date/venue/time/address; the client's site
 displays it via an embed. No login, no manual data entry, no middleman to email and pay.
 
-**Status:** MVP backend built and smoke-tested locally (2026-08-30) — not yet deployed. See
-"What's built" below.
+**Status:** Deployed and verified live (2026-08-30) at `https://gigsync-backend.doug-rosenberg.workers.dev`
+— real Claude API key (workspace-scoped, see Working conventions), real KV storage, `/extract`
+and `/admin` both confirmed working against Cloudflare's actual infrastructure, not just
+local `wrangler dev`. See "What's built" below.
 
 This repo also doubles as one of two launch-demo artifacts for Doug's web-design business
 (musician sites + SMB workflow apps): this is the **functional/AI-forward demo**; a separate
@@ -78,6 +80,8 @@ break that site's build. The standalone `public/widget.js` client-side embed (be
 earlier, more generic proof-of-concept; the build-time fetch is the one actually wired into
 the real site. Change is on that repo's `feature/gigsync-integration` branch, not yet merged.
 
+**Fixed 2026-08-30 (found via live testing):** the extraction prompt now includes today's date so partial/relative dates ("Sat Oct 3," "next Friday") resolve to the correct upcoming occurrence instead of an arbitrary year — a real confirmation email with a year-less date sent the model to the wrong year (2025 instead of 2026) before this fix. Verified live: the exact same input resolved incorrectly before the fix and correctly after, redeployed to `gigsync-backend.doug-rosenberg.workers.dev`.
+
 **Not yet built:** email-routing intake (Cloudflare Email Routing → this Worker — domain
 chosen, dashboard UI not yet configured), the confirmation-receipt auto-reply, an edit/delete
 workflow (both `/extract` and the admin dashboard are currently read/append-only), and a
@@ -98,6 +102,7 @@ regardless of whether that exploration happens.
 - **Zero-dependency runtime, plain `fetch` to the Anthropic API** — no SDK. Keeps the Worker
   small and avoids bundling issues; also means the same pattern ports easily to any other
   runtime later.
+- **The Anthropic API key must be workspace-scoped, not a default "same as linked account" personal key.** A personal key tied to an account with access to multiple workspaces (e.g. Default + the auto-created Claude Code workspace) requires an `anthropic-workspace-id` header on every request or it 400s. Creating the key with Scope set to a single workspace (e.g. "Default") avoids needing that header at all — this is what's actually deployed. Found live 2026-08-30.
 - **No login/auth by design** — a `clientId` string is the only tenancy boundary. Don't add
   an account system without a real reason; it's a deliberate scope decision, not an oversight
   (see README.md's Draft Architecture section).

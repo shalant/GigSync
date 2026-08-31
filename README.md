@@ -1,6 +1,6 @@
 # GigSync — Musician Gig-Calendar Automation
 
-**Status:** Early idea / pre-validation (started 2026-08-30)
+**Status:** MVP backend built and deployed live (2026-08-30) — core extraction/storage validated against real infrastructure. Still pre-validation on the actual product idea itself (no real client email tested yet) and pre-decision on business model. See "Built: MVP Backend" below for what's actually live.
 
 ## The Problem
 
@@ -18,21 +18,23 @@ Most musicians never keep their website's gig calendar up to date. Updating a ca
 
 Existing Azure-hosted app/DB already exists. Azure SQL allows multiple databases under the same logical server for relatively cheap (serverless tier with auto-pause scales to near-$0 idle cost) — the idea is to add GigSync as a second database there, with the cost of a higher service tier funded by landing an actual paying client rather than paid for speculatively upfront.
 
-## Built: MVP Backend (2026-08-30)
+## Built: MVP Backend (2026-08-30) — deployed and live
 
-A working Cloudflare Worker implementing the two-endpoint shape below, built for a single-night launch-demo timeline (see Validation Plan). Smoke-tested locally (routing, validation, error handling, KV round-trip all confirmed) — not yet deployed or tested against the real Claude API.
+A working Cloudflare Worker implementing the endpoints below, built for a single-night launch-demo timeline (see Validation Plan). **Deployed and verified against real Cloudflare infrastructure and the real Claude API**, not just local `wrangler dev` — live at `https://gigsync-backend.doug-rosenberg.workers.dev`.
 
-- `src/index.ts` — the Worker. `POST /extract` takes `{ text, clientId }`, forces a Claude tool-use call (`extract_gig_details`: date/time/venue/address/notes), appends the result to that client's KV list, returns the structured gig. `GET /gigs?client=X` returns the stored list for that tenant.
+- `src/index.ts` — the Worker. `POST /extract` takes `{ text, clientId }`, forces a Claude tool-use call (`extract_gig_details`: date/time/venue/address/notes), appends the result to that client's KV list, returns the structured gig. `GET /gigs?client=X` returns the stored list for that tenant. `GET /admin` is a bare-bones dashboard over all clients' data; `GET /` is a plain landing page.
 - Model defaults to `claude-haiku-4-5-20251001` (cheap; extraction from one message is not a hard task) — bump the `MODEL` constant to `claude-sonnet-5` if real messages turn out messier than expected.
 - CORS is wide open (`*`) for the demo. Restrict to actual client site origins before this has real, non-demo clients.
-- Zero-dependency at runtime — plain `fetch` to the Anthropic API, no SDK. Any frontend (Astro or otherwise) can call these two JSON endpoints directly; nothing here is Astro-specific.
+- Zero-dependency at runtime — plain `fetch` to the Anthropic API, no SDK. Any frontend (Astro or otherwise) can call these JSON endpoints directly; nothing here is Astro-specific.
+- **The extraction prompt anchors to today's real date** so a confirmation with a year-less date ("Sat Oct 3") resolves to the correct upcoming occurrence — found and fixed after live testing initially resolved one to the wrong year (2025 instead of 2026).
 
-**To finish tonight (needs your Cloudflare/Anthropic accounts — not something I can do for you):**
-1. `npx wrangler login` (if not already).
+**Real validation done (2026-08-30):** posted realistic gig-confirmation text to the live `/extract` endpoint and checked the output against real Cloudflare infrastructure and the real Claude API — this is the actual product-risk check the Validation Plan below calls for, not just a code smoke test. Still worth running an actual Guacamayo gig-confirmation email through it once one exists, to validate against real-world message formatting rather than a written test case.
+
+**Setup, for reference (already done for the current deploy):**
+1. `npx wrangler login`.
 2. `npx wrangler kv namespace create GIGS_KV` → paste the returned id into `wrangler.jsonc`.
-3. `npx wrangler secret put ANTHROPIC_API_KEY` (paste your real key) — or copy `.dev.vars.example` to `.dev.vars` for local-only testing.
+3. `npx wrangler secret put ANTHROPIC_API_KEY` — **must be a workspace-scoped key** (Scope set to a single workspace, e.g. "Default"), not the default "same as linked account" personal key, or every request 400s asking for an `anthropic-workspace-id` header.
 4. `npm run dev` to test locally, or `npm run deploy` to ship it to `*.workers.dev` for free.
-5. **Do the real validation test** (see Validation Plan below) — POST 2-3 real Guacamayo gig-confirmation emails to `/extract` and check the output. This is the actual product-risk check, not just a code smoke test.
 
 ## Draft Architecture (not yet built — subject to change once parsing is validated)
 

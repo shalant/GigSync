@@ -86,7 +86,11 @@ async function extractGigDetails(text: string, apiKey: string): Promise<Extracte
 			messages: [
 				{
 					role: "user",
-					content: `Extract the gig booking details from this message. If a field isn't stated, use an empty string rather than guessing.\n\n---\n${text}\n---`,
+					// Confirmations often give a date with no year ("Sat Oct 3", "next Friday") —
+					// without today's date as an anchor, the model has to guess the year and can
+					// land in the past. Found live 2026-08-30: "Sat Oct 3" resolved to 2025-10-03
+					// instead of the correct 2026-10-03.
+					content: `Today's date is ${new Date().toISOString().slice(0, 10)}. Extract the gig booking details from this message. If the date is given without a year (a day of week, or just a month/day), resolve it to the next real occurrence on or after today — never a date in the past. If a field isn't stated, use an empty string rather than guessing.\n\n---\n${text}\n---`,
 				},
 			],
 		}),

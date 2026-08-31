@@ -46,6 +46,10 @@ Claude's Messages API can take a PDF directly as a native `document` content blo
 
 But the default assumption is plain text: if whatever capture step is in front of the Worker (a scanning app, a forwarded email body) can already produce text, send that — it's cheaper (a PDF page runs meaningfully more tokens than the same content as text, since it's processed like an image) and needs zero code beyond what already exists (`POST /extract { text }`). Only reach for the PDF/document path if a real case turns up where plain-text OCR quality isn't good enough.
 
+## Real bug found via live testing: dates need a "today" anchor
+
+The "actual problem" section above names a wrong date on a real calendar as exactly the failure this exists to prevent — and live testing on 2026-08-30 turned up a real way that could happen: a confirmation with a year-less date ("Sat Oct 3") got resolved to 2025-10-03 (already in the past) instead of 2026-10-03, because the extraction prompt never told the model what today's actual date was. Fixed by anchoring the prompt to the real current date and instructing it to resolve partial dates to the next occurrence on or after today, never the past. Worth remembering as a class of bug, not just this one instance: anything that depends on "now" needs "now" passed in explicitly — the model has no other way to know.
+
 ## Cost to run
 
 At current/early scale (a handful of clients, each forwarding maybe tens of gigs a month):
